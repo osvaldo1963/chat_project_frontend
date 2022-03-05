@@ -7,12 +7,12 @@ const ENDPOINT = "http://localhost:3005";
 function App() {
 
   const [ stream, setStream ] = useState();
-  const [me, setMe] = useState();
-  const [call, setCall] = useState();
-  const [callAccepted, setCallAccepted] = useState();
-  const [callEnded, setCallEnded] = useState();
-  const [name, setName] = useState();
-
+  const [ me, setMe ] = useState();
+  const [ call, setCall ] = useState({});
+  const [ callAccepted, setCallAccepted ] = useState();
+  const [ callEnded, setCallEnded ] = useState();
+  const [ name, setName ] = useState();
+  const [ idToCall, setIdToCall ] = useState();
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
@@ -53,14 +53,18 @@ function App() {
   }
 
   const callUser = (id) => {
+    
     const peer = new Peer({ initiator: true, trickle: false, stream });
+    console.log("startted");
     peer.on('signal', (data) => {
+      
       Socket.emit('calluser', { userToCall: id, signalData: data, from: me, name });
     });
     peer.on('stream', (currentStream) => {
       userVideo.current.srcObject = currentStream;
     });
-    Socket.on('callaccepted', (signal) => {
+    Socket.on('callAccepted', (signal) => {
+      console.log(signal);
       setCallAccepted(true); 
       peer.signal(signal);
     });
@@ -90,10 +94,38 @@ function App() {
             )}
         </div>
         <div>
-          <input type={"text"} value={name} onChange={(e) => setName(e.target.value)}></input>
+          <label>{me}</label>
         </div>
         <div>
-          <input type={"text"} value={name} onChange={(e) => setName(e.target.value)}></input>
+          <label>Name</label>
+          <input type={"text"} onChange={(e) => {
+            setName(e.target.value);
+          }}></input>
+        </div>
+        <div>
+          <label>ID To Call</label>
+          <input type={"text"} onChange={(e) => {
+            setIdToCall(e.target.value)
+          }}></input>
+        </div>
+        <div>
+          {
+            callAccepted && !callEnded ? (
+              <input type={"button"} value={"hangup"} onClick={leaveCall}/>
+            ): (
+              <input type={"button"} value={"call"} onClick={() => callUser(idToCall)}/>
+            )
+          }
+        </div>
+        <div>
+          {
+            call.isReceivedCall && !callAccepted && (
+              <div>
+                <h1>{call.name}</h1>
+                <input type={"button"} onClick={answerCall} value={"answer call"}/>
+              </div>
+            )
+          }
         </div>
       </header>
     </div>
