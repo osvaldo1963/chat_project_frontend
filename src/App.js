@@ -3,7 +3,7 @@ import Peer from 'simple-peer';
 import React, { useEffect, useRef, useState } from "react";
 import Socket from 'socket.io-client';
 
-const ENDPOINT = "http://localhost:3005";
+const ENDPOINT = "https://ablame-backend.herokuapp.com/";
 function App() {
 
   const [ stream, setStream ] = useState();
@@ -30,7 +30,7 @@ function App() {
     }).catch((error) => {
       console.log(error);
     })
-    const socket = Socket(ENDPOINT);
+    const socket = Socket(ENDPOINT,  {transports: ['websocket']});
     socket.on("me", (id) => setMe(id));
     socket.on('calluser', (callinfo) => {
       const { from, name: callerName, signal } = callinfo;
