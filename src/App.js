@@ -16,7 +16,7 @@ function App() {
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
-
+  const socket = Socket(ENDPOINT,  {transports: ['websocket']});
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({
       video: true, 
@@ -30,7 +30,7 @@ function App() {
     }).catch((error) => {
       console.log(error);
     })
-    const socket = Socket(ENDPOINT,  {transports: ['websocket']});
+    
     socket.on("me", (id) => setMe(id));
     socket.on('calluser', (callinfo) => {
       const { from, name: callerName, signal } = callinfo;
@@ -41,30 +41,30 @@ function App() {
   
   const answerCall = () => {
     setCallAccepted(true);
-    const peer = new Peer({initiator: false, trickle: false, stream});
+    const peer = new Peer({initiator: false, trickle: false, stream: myVideo.current.srcObject });
     peer.on('signal', (data) => {
-      Socket.emit('answercall', { signal: data, to: call.from });
+      socket.emit('answercall', { signal: data, to: call.from });
     });
     peer.on('stream', (currentStream) => {
       userVideo.current.srcObject = currentStream;
     });
     peer.signal(call.signal);
+
     connectionRef.current = peer;
   }
 
   const callUser = (id) => {
-    
-    const peer = new Peer({ initiator: true, trickle: false, stream });
-    console.log("startted");
+    const peer = new Peer({ initiator: true, trickle: false, stream: myVideo.current.srcObject});
     peer.on('signal', (data) => {
+      console.debug(data);
+      socket.emit('calluser', { userToCall: id, signalData: data, from: me, name });
       
-      Socket.emit('calluser', { userToCall: id, signalData: data, from: me, name });
     });
     peer.on('stream', (currentStream) => {
+      console.log("on stream");
       userVideo.current.srcObject = currentStream;
     });
-    Socket.on('callAccepted', (signal) => {
-      console.log(signal);
+    socket.on('callAccepted', (signal) => {
       setCallAccepted(true); 
       peer.signal(signal);
     });
