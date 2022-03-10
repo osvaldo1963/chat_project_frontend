@@ -17,16 +17,14 @@ function App() {
   const userVideo = useRef();
   const connectionRef = useRef();
   const socket = Socket(ENDPOINT,  {transports: ['websocket']});
+  
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({
       video: true, 
       audio: true
     }).then((stream) => {
-      const peer1 = new Peer({initiator: true});
-      peer1.on('signal', (data) => {
-        setStream(data)
-        myVideo.current.srcObject = stream
-      });
+      setStream(stream);
+      myVideo.current.srcObject = stream;
     }).catch((error) => {
       console.log(error);
     })
@@ -41,7 +39,7 @@ function App() {
   
   const answerCall = () => {
     setCallAccepted(true);
-    const peer = new Peer({initiator: false, trickle: false, stream: myVideo.current.srcObject });
+    const peer = new Peer({initiator: false, trickle: false, stream: stream});
     peer.on('signal', (data) => {
       socket.emit('answercall', { signal: data, to: call.from });
     });
@@ -54,14 +52,13 @@ function App() {
   }
 
   const callUser = (id) => {
-    const peer = new Peer({ initiator: true, trickle: false, stream: myVideo.current.srcObject});
+    
+    const peer = new Peer({ initiator: true, trickle: false, stream: stream });
     peer.on('signal', (data) => {
-      console.debug(data);
       socket.emit('calluser', { userToCall: id, signalData: data, from: me, name });
       
     });
     peer.on('stream', (currentStream) => {
-      console.log("on stream");
       userVideo.current.srcObject = currentStream;
     });
     socket.on('callAccepted', (signal) => {
@@ -87,10 +84,10 @@ function App() {
         </div>
         <div>
             {callAccepted && !callEnded && (
-              <div>
+              <>
                 <h2>{call.name || 'name'}</h2>
                 <video playsInline muted ref={userVideo} autoPlay style={{ width: "700px", height: "700px" }} />
-              </div>
+              </>
             )}
         </div>
         <div>
